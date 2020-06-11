@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns:util="http://www.springframework.org/schema/util"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.3.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.3.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.3.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
+
+	<!-- 开启注解扫描 -->
+	<context:component-scan
+		base-package="com.gyl.dao,com.gyl.service" />
+
+	<!-- 数据库的配置 -->
+	<context:property-placeholder
+		location="classpath:jdbc.properties" />
+	<bean id="dataSource"
+		class="com.mchange.v2.c3p0.ComboPooledDataSource">
+		<property name="password" value="${jdbc.password}"></property>
+		<property name="user" value="${jdbc.userName}"></property>
+		<property name="jdbcUrl" value="${jdbc.url}"></property>
+		<property name="driverClass" value="${jdbc.driver}"></property>
+	</bean>
+
+	<!-- 整合hibernate -->
+	<bean id="sessionFactory"
+		class="org.springframework.orm.hibernate5.LocalSessionFactoryBean">
+		<property name="dataSource" ref="dataSource"></property>
+		<!-- hibernatexml位置 -->
+		<!-- 可以省略Hibernate的配置文件,在hibernateproperties里配置hibernate的基本信息 -->
+		<property name="configLocation"
+			value="classpath:hibernate.cfg.xml"></property>
+		<!-- 映射类位置 -->
+		<property name="mappingLocations"
+			value="classpath:com/gyl/model/*.hbm.xml"></property>
+	</bean>
+
+
+	<!-- 事务管理器 -->
+	<bean id="transactionManager"
+		class="org.springframework.orm.hibernate5.HibernateTransactionManager">
+		<property name="sessionFactory" ref="sessionFactory"></property>
+	</bean>
+	<!-- 事务属性 -->
+	<tx:advice id="txAdvice"
+		transaction-manager="transactionManager">
+		<tx:attributes>
+			<!-- 方法配置:只需要输入read-only属性,其他为默认 -->
+			<tx:method name="get*" read-only="true" />
+			<tx:method name="find*" read-only="true" />
+			<tx:method name="select*" read-only="true" />
+			<tx:method name="*" read-only="false" />
+		</tx:attributes>
+	</tx:advice>
+	<!-- 事务切入点, aop 切入方法一样配置 -->
+	<aop:config>
+		<aop:pointcut expression="execution(* com.gyl.service.*.*(..))" id="pointcut" />
+		<aop:advisor advice-ref="txAdvice"
+			pointcut-ref="pointcut" />
+	</aop:config>
+
+
+</beans>
